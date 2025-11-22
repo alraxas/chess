@@ -1,7 +1,6 @@
-package org.example.oopchess.player;
+package org.example.oopchess.models.player;
 
 import org.example.oopchess.enums.PieceColor;
-import org.example.oopchess.models.Piece;
 
 public class Player {
     private PieceColor color;

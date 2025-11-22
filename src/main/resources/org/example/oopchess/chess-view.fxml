@@ -1,16 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.VBox?>
 
 <?import javafx.scene.control.Button?>
-<VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="org.example.oopchess.ChessController">
-  <padding>
-    <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
-  </padding>
 
-  <Label fx:id="welcomeText"/>
-  <Button text="Hello!" onAction="#onHelloButtonClick"/>
-</VBox>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.BorderPane?>
+
+<BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.oopchess.ChessController">
+  <top>
+    <VBox alignment="CENTER" spacing="10" style="-fx-background-color: #f0f0f0; -fx-padding: 10;">
+      <HBox alignment="CENTER" spacing="10">
+        <Label fx:id="statusLabel" text="Ход: Белые" style="-fx-font-size: 16;"/>
+        <Label fx:id="gameStateLabel" style="-fx-font-size: 16;"/>
+      </HBox>
+      <Button text="Новая Игра" onAction="#newGame" style="-fx-font-size: 14; -fx-padding: 5 15;"/>
+    </VBox>
+  </top>
+</BorderPane>

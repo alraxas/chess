@@ -1,7 +1,9 @@
-package org.example.oopchess.models;
+package org.example.oopchess.models.board;
 
 import org.example.oopchess.enums.PieceColor;
 import org.example.oopchess.enums.PieceType;
+import org.example.oopchess.rules.MoveValidator;
+import org.example.oopchess.models.pieces.Piece;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,30 +28,30 @@ public class Board {
         }
 
         for (int i = 0; i < 8; i++) {
-            squares[1][i] = new Piece(PieceType.PAWN, PieceColor.LIGHT);
-            squares[6][i] = new Piece(PieceType.PAWN, PieceColor.DARK);
+            squares[1][i] = new Piece(PieceType.PAWN, PieceColor.BLACK);
+            squares[6][i] = new Piece(PieceType.PAWN, PieceColor.WHITE);
         }
 
-        squares[0][0] = new Piece(PieceType.ROOK, PieceColor.LIGHT);
-        squares[0][7] = new Piece(PieceType.ROOK, PieceColor.LIGHT);
-        squares[7][0] = new Piece(PieceType.ROOK, PieceColor.DARK);
-        squares[7][7] = new Piece(PieceType.ROOK, PieceColor.DARK);
+        squares[0][0] = new Piece(PieceType.ROOK, PieceColor.BLACK);
+        squares[0][7] = new Piece(PieceType.ROOK, PieceColor.BLACK);
+        squares[7][0] = new Piece(PieceType.ROOK, PieceColor.WHITE);
+        squares[7][7] = new Piece(PieceType.ROOK, PieceColor.WHITE);
 
-        squares[0][1] = new Piece(PieceType.KNIGHT, PieceColor.LIGHT);
-        squares[0][6] = new Piece(PieceType.KNIGHT, PieceColor.LIGHT);
-        squares[7][1] = new Piece(PieceType.KNIGHT, PieceColor.DARK);
-        squares[7][6] = new Piece(PieceType.KNIGHT, PieceColor.DARK);
+        squares[0][1] = new Piece(PieceType.KNIGHT, PieceColor.BLACK);
+        squares[0][6] = new Piece(PieceType.KNIGHT, PieceColor.BLACK);
+        squares[7][1] = new Piece(PieceType.KNIGHT, PieceColor.WHITE);
+        squares[7][6] = new Piece(PieceType.KNIGHT, PieceColor.WHITE);
 
-        squares[0][2] = new Piece(PieceType.BISHOP, PieceColor.LIGHT);
-        squares[0][5] = new Piece(PieceType.BISHOP, PieceColor.LIGHT);
-        squares[7][2] = new Piece(PieceType.BISHOP, PieceColor.DARK);
-        squares[7][5] = new Piece(PieceType.BISHOP, PieceColor.DARK);
+        squares[0][2] = new Piece(PieceType.BISHOP, PieceColor.BLACK);
+        squares[0][5] = new Piece(PieceType.BISHOP, PieceColor.BLACK);
+        squares[7][2] = new Piece(PieceType.BISHOP, PieceColor.WHITE);
+        squares[7][5] = new Piece(PieceType.BISHOP, PieceColor.WHITE);
 
-        squares[0][3] = new Piece(PieceType.QUEEN, PieceColor.LIGHT);
-        squares[7][3] = new Piece(PieceType.QUEEN, PieceColor.DARK);
+        squares[0][3] = new Piece(PieceType.QUEEN, PieceColor.BLACK);
+        squares[7][3] = new Piece(PieceType.QUEEN, PieceColor.WHITE);
 
-        squares[0][4] = new Piece(PieceType.KING, PieceColor.DARK);
-        squares[7][4] = new Piece(PieceType.KING, PieceColor.DARK);
+        squares[0][4] = new Piece(PieceType.KING, PieceColor.BLACK);
+        squares[7][4] = new Piece(PieceType.KING, PieceColor.WHITE);
     }
 
     public boolean isValidPosition(int row, int col) {

@@ -2,7 +2,8 @@ package org.example.oopchess.enums;
 
 public enum GameState {
     PLAYING,
-    WIN,
+    WHITE_WIN,
+    BLACK_WIN,
     LOSS,
     DRAW,
     STALEMATE

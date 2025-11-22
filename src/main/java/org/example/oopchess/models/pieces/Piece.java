@@ -1,4 +1,4 @@
-package org.example.oopchess.models;
+package org.example.oopchess.models.pieces;
 
 import org.example.oopchess.enums.PieceColor;
 import org.example.oopchess.enums.PieceType;

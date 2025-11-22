@@ -1,4 +1,4 @@
-package org.example.oopchess.models;
+package org.example.oopchess.models.board;
 
 import java.util.Objects;
 

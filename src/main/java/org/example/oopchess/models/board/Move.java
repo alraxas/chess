@@ -1,4 +1,6 @@
-package org.example.oopchess.models;
+package org.example.oopchess.models.board;
+
+import org.example.oopchess.models.pieces.Piece;
 
 public class Move {
     private int fromRow;
