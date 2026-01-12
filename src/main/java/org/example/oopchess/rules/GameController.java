@@ -34,12 +34,11 @@ public class GameController {
         playerStatuses.put(PieceColor.WHITE, GameState.PLAYING);
         playerStatuses.put(PieceColor.BLACK, GameState.PLAYING);
 
-        // Очередь ходов (белые начинают)
         turnQueue = new LinkedList<>();
         turnQueue.offer(PieceColor.WHITE);
         turnQueue.offer(PieceColor.BLACK);
 
-        currentPlayerColor = turnQueue.peek(); // Текущий игрок - первый в очереди
+        currentPlayerColor = turnQueue.peek();
         gameState = GameState.PLAYING;
         lastMove = null;
     }
@@ -78,7 +77,6 @@ public class GameController {
 
         if (board.isCheckmate(opponentColor)) {
             gameState = GameState.WIN;
-//            gameState = (opponentColor == PieceColor.WHITE) ? GameState.BLACK_WIN : GameState.WHITE_WIN;
             playerStatuses.put(opponentColor, GameState.CHECKMATE);
             playerStatuses.put(getCurrentPlayerColor(), GameState.WIN);
             return;
@@ -97,25 +95,20 @@ public class GameController {
     }
 
     private PieceColor getOpponentColor() {
-        // Получаем следующего игрока в очереди (противника)
         Iterator<PieceColor> iterator = turnQueue.iterator();
-        iterator.next(); // Пропускаем текущего игрока
+        iterator.next();
         return iterator.next();
     }
 
     private void switchPlayer() {
-        PieceColor playedColor = turnQueue.poll(); // Убираем текущего игрока из начала очереди
-        turnQueue.offer(playedColor); // Добавляем его в конец очереди
-        currentPlayerColor = turnQueue.peek(); // Обновляем текущего игрока
-
-        System.out.println("Switched to player: " + currentPlayerColor);
+        PieceColor playedColor = turnQueue.poll();
+        turnQueue.offer(playedColor);
+        currentPlayerColor = turnQueue.peek();
     }
 
     public void resign() {
         PieceColor resigningPlayer = currentPlayerColor;
         PieceColor winner = (resigningPlayer == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
-
-//        gameState = (winner == PieceColor.WHITE) ? GameState.WHITE_WIN : GameState.BLACK_WIN;
         playerStatuses.put(resigningPlayer, GameState.RESIGNED);
         playerStatuses.put(winner, GameState.WIN);
     }
@@ -138,8 +131,6 @@ public class GameController {
     }
 
     private void switchPlayerBack() {
-        // Для отмены хода нужно вернуть предыдущего игрока
-        // Убираем последнего игрока из конца очереди
         PieceColor lastPlayer = null;
         Iterator<PieceColor> iterator = turnQueue.iterator();
         while (iterator.hasNext()) {
@@ -147,9 +138,8 @@ public class GameController {
         }
 
         if (lastPlayer != null) {
-            // Создаем новую очередь с правильным порядком
             Queue<PieceColor> newQueue = new LinkedList<>();
-            newQueue.offer(lastPlayer); // Последний становится первым
+            newQueue.offer(lastPlayer); // последний становится первым
             for (PieceColor color : turnQueue) {
                 if (color != lastPlayer) {
                     newQueue.offer(color);

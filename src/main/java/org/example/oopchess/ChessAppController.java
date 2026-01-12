@@ -38,7 +38,7 @@ public class ChessAppController {
     private GameController gameController;
     private Position selectedPosition;
     private List<Position> legalMoves;
-    //TODO: убрать пересоздание листа легал мувс и вынести в другое место не обновлять каждый раз
+
     @FXML
     public void initialize() {
         gameController = new GameController();
@@ -61,13 +61,6 @@ public class ChessAppController {
     @FXML
     private void resign() {
         gameController.resign();
-        updateDisplay();
-        updatePlayerInfo();
-    }
-
-    @FXML
-    private void offerDraw() {
-        gameController.offerDraw();
         updateDisplay();
         updatePlayerInfo();
     }

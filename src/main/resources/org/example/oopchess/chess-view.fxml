@@ -46,8 +46,6 @@
       <VBox spacing="5">
         <Button text="Сдаться" onAction="#resign"
                 style="-fx-font-size: 13; -fx-padding: 8 15; -fx-background-color: #F44336; -fx-text-fill: white;"/>
-        <Button text="Ничья" onAction="#offerDraw"
-                style="-fx-font-size: 13; -fx-padding: 8 15; -fx-background-color: #FF9800; -fx-text-fill: white;"/>
         <Button text="Отменить ход" onAction="#undoMove"
                 style="-fx-font-size: 13; -fx-padding: 8 15;"/>
       </VBox>

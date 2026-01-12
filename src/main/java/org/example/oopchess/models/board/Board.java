@@ -81,14 +81,6 @@ public class Board {
         this.enPassantTarget = target;
     }
 
-//    public boolean isEnPassantPossible(Position pawnPosition, int targetCol) {
-//        if (enPassantTarget == null) return false;
-//
-//        // Проверяем, совпадает ли позиция с целью взятия на проходе
-//        return enPassantTarget.getRow() == pawnPosition.getRow() &&
-//                enPassantTarget.getCol() == targetCol;
-//    }
-
     public boolean makeMove(Move move) {
         if (!moveValidator.isValidMove(move)) return false;
 
@@ -104,8 +96,6 @@ public class Board {
 
             setPiece(move.getToRow(), move.getToCol(), piece);
             setPiece(move.getFromRow(), move.getFromCol(), null);
-
-            handlePawnPromotion(move);
         }
 
         piece.setMoved(true);
@@ -156,18 +146,6 @@ public class Board {
         }
 
         move.setCastling(true);
-    }
-
-    private void handlePawnPromotion(Move move) {
-        Piece piece = move.getPiece();
-
-        if (piece instanceof Pawn) {
-            int promotionRow = (piece.getColor() == PieceColor.WHITE) ? 0 : 7;
-
-            if (move.getToRow() == promotionRow) {
-                // Здесь будет логика превращения пешки
-            }
-        }
     }
 
     public MoveValidator getMoveValidator() {

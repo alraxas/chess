@@ -55,8 +55,6 @@ public class MoveValidator {
         return isInCheck;
     }
 
-    //TODO: убрать разнести по классам
-
     public boolean isSquareAttacked(int row, int col, PieceColor color) {
         PieceColor opponent = (color == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
 
@@ -179,31 +177,6 @@ public class MoveValidator {
                     }
                 }
             }
-        }
-        return true;
-    }
-
-    public List<Move> getAllValidMoves(PieceColor color) {
-        List<Move> moves = new ArrayList<>();
-        for (int row = 0; row < 8; row++) {
-            for (int col = 0; col < 8; col++) {
-                Piece piece = board.getPiece(new Position(row, col));
-                if (piece != null && piece.getColor() == color) {
-                    moves.addAll(getValidMoves(piece, row, col));
-                }
-            }
-        }
-        return moves;
-    }
-
-    public boolean isPathClear(int fr, int fc, int tr, int tc) {
-        int rs = Integer.compare(tr, fr);
-        int cs = Integer.compare(tc, fc);
-        int r = fr + rs, c = fc + cs;
-        while (r != tr || c != tc) {
-            if (board.getPiece(new Position(r, c)) != null) return false;
-            r += rs;
-            c += cs;
         }
         return true;
     }
