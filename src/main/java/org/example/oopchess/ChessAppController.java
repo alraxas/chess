@@ -10,6 +10,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import org.example.oopchess.enums.GameState;
 import org.example.oopchess.models.board.Move;
 import org.example.oopchess.models.pieces.Piece;
 import org.example.oopchess.rules.GameController;
@@ -25,14 +26,19 @@ public class ChessAppController {
     @FXML
     private Label statusLabel;
     @FXML
-    private Label gameStateLabel;
+    private Label whitePlayerLabel;
+    @FXML
+    private Label blackPlayerLabel;
+    @FXML
+    private Label whiteStatusLabel;
+    @FXML
+    private Label blackStatusLabel;
 
     private GridPane chessBoard;
     private GameController gameController;
     private Position selectedPosition;
     private List<Position> legalMoves;
     //TODO: убрать пересоздание листа легал мувс и вынести в другое место не обновлять каждый раз
-
     @FXML
     public void initialize() {
         gameController = new GameController();
@@ -40,6 +46,7 @@ public class ChessAppController {
         legalMoves = new ArrayList<>();
         setupBoard();
         updateDisplay();
+        updatePlayerInfo();
     }
 
     @FXML
@@ -48,12 +55,68 @@ public class ChessAppController {
         selectedPosition = null;
         legalMoves.clear();
         updateDisplay();
+        updatePlayerInfo();
+    }
+
+    @FXML
+    private void resign() {
+        gameController.resign();
+        updateDisplay();
+        updatePlayerInfo();
+    }
+
+    @FXML
+    private void offerDraw() {
+        gameController.offerDraw();
+        updateDisplay();
+        updatePlayerInfo();
+    }
+
+    @FXML
+    private void undoMove() {
+        gameController.undoLastMove();
+        updateDisplay();
+        updatePlayerInfo();
+    }
+
+    private void updatePlayerInfo() {
+        whitePlayerLabel.setText("Белые: " + gameController.getPlayer(PieceColor.WHITE).getName());
+        blackPlayerLabel.setText("Черные: " + gameController.getPlayer(PieceColor.BLACK).getName());
+
+        if (whiteStatusLabel != null && blackStatusLabel != null) {
+            whiteStatusLabel.setText(gameController.getPlayerStatus(PieceColor.WHITE).toString());
+            blackStatusLabel.setText(gameController.getPlayerStatus(PieceColor.BLACK).toString());
+
+            setStatusLabelColor(whiteStatusLabel, gameController.getPlayerStatus(PieceColor.WHITE));
+            setStatusLabelColor(blackStatusLabel, gameController.getPlayerStatus(PieceColor.BLACK));
+        }
+    }
+
+    private void setStatusLabelColor(Label label, GameState status) {
+        switch (status) {
+            case PLAYING:
+                label.setStyle("-fx-text-fill: #4CAF50;"); // Зеленый
+                break;
+            case CHECK:
+                label.setStyle("-fx-text-fill: #FF9800;"); // Оранжевый
+                break;
+            case CHECKMATE:
+                label.setStyle("-fx-text-fill: #F44336;"); // Красный
+                break;
+            case STALEMATE:
+                label.setStyle("-fx-text-fill: #9E9E9E;"); // Серый
+                break;
+            case RESIGNED:
+                label.setStyle("-fx-text-fill: #795548;"); // Коричневый
+                break;
+            default:
+                label.setStyle("-fx-text-fill: #333333;"); // Черный
+        }
     }
 
     private void setupBoard() {
         chessBoard = new GridPane();
         chessBoard.setPadding(new Insets(10));
-
         rootPane.setCenter(chessBoard);
     }
 
@@ -61,17 +124,14 @@ public class ChessAppController {
         Position clicked = new Position(row, col);
         Piece piece = gameController.getBoard().getPiece(new Position(row, col));
 
-        if (clicked.equals(selectedPosition)) { //отмена выбора повторное нажатие на выбранную фигуру
+        if (clicked.equals(selectedPosition)) {
             selectedPosition = null;
             legalMoves.clear();
-        } else if (piece != null && piece.getColor() == gameController.getCurrentPlayer().getColor()) { //выбор фигуры
+        } else if (piece != null && piece.getColor() == gameController.getCurrentPlayerColor()) {
             selectedPosition = clicked;
             legalMoves = gameController.getValidMovesForPiece(row, col);
-        } else if (selectedPosition != null && legalMoves.stream().anyMatch(p -> p.equals(clicked))) { //ход
-            Move move =  gameController.makeMove(selectedPosition.getRow(), selectedPosition.getCol(), row, col);
-            if (move != null && move.isEnPassant()) {
-                System.out.println("En passant move performed!");
-            }
+        } else if (selectedPosition != null && legalMoves.stream().anyMatch(p -> p.equals(clicked))) {
+            Move move = gameController.makeMove(selectedPosition.getRow(), selectedPosition.getCol(), row, col);
             selectedPosition = null;
             legalMoves.clear();
         } else {
@@ -80,6 +140,7 @@ public class ChessAppController {
         }
 
         updateDisplay();
+        updatePlayerInfo();
     }
 
     private void updateDisplay() {
@@ -138,9 +199,8 @@ public class ChessAppController {
     }
 
     private void updateStatus() {
-        String current = (gameController.getCurrentPlayer().getColor() == PieceColor.WHITE)
+        String current = (gameController.getCurrentPlayerColor() == PieceColor.WHITE)
                 ? "Ход: Белые" : "Ход: Черные";
         statusLabel.setText(current);
-        gameStateLabel.setText("Статус: " + gameController.getGameState().toString());
     }
 }

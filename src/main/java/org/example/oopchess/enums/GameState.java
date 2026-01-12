@@ -8,5 +8,7 @@ public enum GameState {
     DRAW,
     STALEMATE,
     CHECK,
-    CHECKMATE
+    CHECKMATE,
+    RESIGNED,
+    WIN
 }

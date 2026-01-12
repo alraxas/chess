@@ -6,27 +6,40 @@ import org.example.oopchess.models.board.*;
 import org.example.oopchess.models.pieces.Piece;
 import org.example.oopchess.models.player.Player;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class GameController {
     private Board board;
-    private Player whitePlayer;
-    private Player blackPlayer;
-    private Player currentPlayer;
+    private Map<PieceColor, Player> players;
+    private Queue<PieceColor> turnQueue;
+    private PieceColor currentPlayerColor;
     private GameState gameState;
     private Move lastMove;
+    private Map<PieceColor, GameState> playerStatuses;
 
     public GameController() {
         initGame();
     }
+
     public void initGame() {
         board = new Board();
         board.initBoard();
-        //TODO: сделать цвета в мапе и игроков в очереди и игров занести в мапу с цветами??
-        whitePlayer = new Player(PieceColor.WHITE, "Player-1");
-        blackPlayer = new Player(PieceColor.BLACK, "Player-2");
-        currentPlayer = whitePlayer;
+
+        players = new HashMap<>();
+        players.put(PieceColor.WHITE, new Player(PieceColor.WHITE, "Игрок 1"));
+        players.put(PieceColor.BLACK, new Player(PieceColor.BLACK, "Игрок 2"));
+
+        playerStatuses = new HashMap<>();
+        playerStatuses.put(PieceColor.WHITE, GameState.PLAYING);
+        playerStatuses.put(PieceColor.BLACK, GameState.PLAYING);
+
+        // Очередь ходов (белые начинают)
+        turnQueue = new LinkedList<>();
+        turnQueue.offer(PieceColor.WHITE);
+        turnQueue.offer(PieceColor.BLACK);
+
+        currentPlayerColor = turnQueue.peek(); // Текущий игрок - первый в очереди
         gameState = GameState.PLAYING;
         lastMove = null;
     }
@@ -35,7 +48,7 @@ public class GameController {
         if (gameState != GameState.PLAYING && gameState != GameState.CHECK) return null;
 
         Piece piece = board.getPiece(new Position(fr, fc));
-        if (piece == null || piece.getColor() != currentPlayer.getColor()) return null;
+        if (piece == null || piece.getColor() != currentPlayerColor) return null;
 
         List<Move> possibleMoves = board.getValidMoves(piece, fr, fc);
         Move selectedMove = null;
@@ -51,43 +64,119 @@ public class GameController {
 
         if (board.makeMove(selectedMove)) {
             lastMove = selectedMove;
-
-            if (board.isCheckmate(getOpponentColor())) {
-                gameState = (currentPlayer.getColor() == PieceColor.BLACK ? GameState.BLACK_WIN : GameState.WHITE_WIN);
-            } else if (board.isCheck(getOpponentColor())) {
-                gameState = GameState.CHECK;
-            } else if (board.isStalemate(currentPlayer.getColor())) {
-                gameState = GameState.STALEMATE;
-            } else {
-                gameState = GameState.PLAYING;
-            }
-
+            updateGameState();
             switchPlayer();
+
+            return selectedMove;
         }
 
-        return selectedMove;
+        return null;
     }
 
+    private void updateGameState() {
+        PieceColor opponentColor = getOpponentColor();
+
+        if (board.isCheckmate(opponentColor)) {
+            gameState = GameState.WIN;
+//            gameState = (opponentColor == PieceColor.WHITE) ? GameState.BLACK_WIN : GameState.WHITE_WIN;
+            playerStatuses.put(opponentColor, GameState.CHECKMATE);
+            playerStatuses.put(getCurrentPlayerColor(), GameState.WIN);
+            return;
+        }
+
+        if (board.isCheck(opponentColor)) {
+            gameState = GameState.CHECK;
+            playerStatuses.put(opponentColor, GameState.CHECK);
+        } else if (board.isStalemate(opponentColor)) {
+            gameState = GameState.STALEMATE;
+            playerStatuses.put(opponentColor, GameState.STALEMATE);
+        } else {
+            gameState = GameState.PLAYING;
+            playerStatuses.put(opponentColor, GameState.PLAYING);
+        }
+    }
 
     private PieceColor getOpponentColor() {
-        return currentPlayer.getColor() == PieceColor.WHITE ? PieceColor.BLACK : PieceColor.WHITE;
+        // Получаем следующего игрока в очереди (противника)
+        Iterator<PieceColor> iterator = turnQueue.iterator();
+        iterator.next(); // Пропускаем текущего игрока
+        return iterator.next();
     }
 
     private void switchPlayer() {
-        currentPlayer = (currentPlayer == whitePlayer) ? blackPlayer : whitePlayer;
+        PieceColor playedColor = turnQueue.poll(); // Убираем текущего игрока из начала очереди
+        turnQueue.offer(playedColor); // Добавляем его в конец очереди
+        currentPlayerColor = turnQueue.peek(); // Обновляем текущего игрока
+
+        System.out.println("Switched to player: " + currentPlayerColor);
+    }
+
+    public void resign() {
+        PieceColor resigningPlayer = currentPlayerColor;
+        PieceColor winner = (resigningPlayer == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
+
+//        gameState = (winner == PieceColor.WHITE) ? GameState.WHITE_WIN : GameState.BLACK_WIN;
+        playerStatuses.put(resigningPlayer, GameState.RESIGNED);
+        playerStatuses.put(winner, GameState.WIN);
+    }
+
+    public void offerDraw() {}
+
+    public void acceptDraw() {
+        gameState = GameState.DRAW;
     }
 
     public void undoLastMove() {
         if (!board.getMoveHistory().isEmpty()) {
             board.undoMove();
-            switchPlayer();
+            // При отмене хода возвращаем предыдущего игрока
+            switchPlayerBack();
             gameState = GameState.PLAYING;
+            playerStatuses.put(PieceColor.WHITE, GameState.PLAYING);
+            playerStatuses.put(PieceColor.BLACK, GameState.PLAYING);
+        }
+    }
+
+    private void switchPlayerBack() {
+        // Для отмены хода нужно вернуть предыдущего игрока
+        // Убираем последнего игрока из конца очереди
+        PieceColor lastPlayer = null;
+        Iterator<PieceColor> iterator = turnQueue.iterator();
+        while (iterator.hasNext()) {
+            lastPlayer = iterator.next();
+        }
+
+        if (lastPlayer != null) {
+            // Создаем новую очередь с правильным порядком
+            Queue<PieceColor> newQueue = new LinkedList<>();
+            newQueue.offer(lastPlayer); // Последний становится первым
+            for (PieceColor color : turnQueue) {
+                if (color != lastPlayer) {
+                    newQueue.offer(color);
+                }
+            }
+            turnQueue = newQueue;
+            currentPlayerColor = turnQueue.peek();
         }
     }
 
     public Board getBoard() { return board; }
 
-    public Player getCurrentPlayer() { return currentPlayer; }
+    public Player getCurrentPlayer() {
+        return players.get(currentPlayerColor);
+    }
+
+    public PieceColor getCurrentPlayerColor() {
+        return currentPlayerColor;
+    }
+
+    public Player getPlayer(PieceColor color) {
+        return players.get(color);
+    }
+
+    public GameState getPlayerStatus(PieceColor color) {
+        return playerStatuses.get(color);
+    }
 
     public GameState getGameState() { return gameState; }
 
@@ -96,12 +185,16 @@ public class GameController {
     public List<Position> getValidMovesForPiece(int row, int col) {
         Piece piece = board.getPiece(new Position(row, col));
 
-        if (piece != null && piece.getColor() == currentPlayer.getColor()) {
-            return board.getMoveValidator().getValidMoves(piece, row, col).stream()
+        if (piece != null && piece.getColor() == currentPlayerColor) {
+            return board.getValidMoves(piece, row, col).stream()
                     .map(move -> new Position(move.getToRow(), move.getToCol()))
                     .collect(Collectors.toList());
         }
 
         return List.of();
+    }
+
+    public List<PieceColor> getTurnOrder() {
+        return new ArrayList<>(turnQueue);
     }
 }
