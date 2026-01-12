@@ -1,10 +1,8 @@
-package org.example.oopchess.controller;
+package org.example.oopchess.rules;
 
 import org.example.oopchess.enums.GameState;
 import org.example.oopchess.enums.PieceColor;
-import org.example.oopchess.models.board.Board;
-import org.example.oopchess.models.board.Move;
-import org.example.oopchess.models.board.Position;
+import org.example.oopchess.models.board.*;
 import org.example.oopchess.models.pieces.Piece;
 import org.example.oopchess.models.player.Player;
 
@@ -24,6 +22,8 @@ public class GameController {
     }
     public void initGame() {
         board = new Board();
+        board.initBoard();
+        //TODO: сделать цвета в мапе и игроков в очереди и игров занести в мапу с цветами??
         whitePlayer = new Player(PieceColor.WHITE, "Player-1");
         blackPlayer = new Player(PieceColor.BLACK, "Player-2");
         currentPlayer = whitePlayer;
@@ -31,35 +31,46 @@ public class GameController {
         lastMove = null;
     }
 
-    public boolean makeMove(int fr, int fc, int tr, int tc) {
-        if (gameState != GameState.PLAYING) return false;
+    public Move makeMove(int fr, int fc, int tr, int tc) {
+        if (gameState != GameState.PLAYING && gameState != GameState.CHECK) return null;
 
-        Piece piece = board.getPiece(fr, fc);
-        if (piece == null || piece.getColor() != currentPlayer.getColor()) return false;
+        Piece piece = board.getPiece(new Position(fr, fc));
+        if (piece == null || piece.getColor() != currentPlayer.getColor()) return null;
 
-        Move move = new Move(fr, fc, tr, tc, piece);
-        if (board.makeMove(move)) {
-            lastMove = move;
+        List<Move> possibleMoves = board.getValidMoves(piece, fr, fc);
+        Move selectedMove = null;
 
-            if (board.getMoveValidator().isCheckmate(getOpponentColor())) {
-                gameState = (currentPlayer.getColor() == PieceColor.BLACK ? GameState.WHITE_WIN : GameState.BLACK_WIN);
-            } else if (isStalemate()) {
+        for (Move move : possibleMoves) {
+            if (move.getToRow() == tr && move.getToCol() == tc) {
+                selectedMove = move;
+                break;
+            }
+        }
+
+        if (selectedMove == null) return null;
+
+        if (board.makeMove(selectedMove)) {
+            lastMove = selectedMove;
+
+            if (board.isCheckmate(getOpponentColor())) {
+                gameState = (currentPlayer.getColor() == PieceColor.BLACK ? GameState.BLACK_WIN : GameState.WHITE_WIN);
+            } else if (board.isCheck(getOpponentColor())) {
+                gameState = GameState.CHECK;
+            } else if (board.isStalemate(currentPlayer.getColor())) {
                 gameState = GameState.STALEMATE;
+            } else {
+                gameState = GameState.PLAYING;
             }
 
             switchPlayer();
-            return true;
         }
-        return false;
+
+        return selectedMove;
     }
+
 
     private PieceColor getOpponentColor() {
-        return currentPlayer == whitePlayer ? PieceColor.WHITE : PieceColor.BLACK;
-    }
-
-    private boolean isStalemate() {
-        return board.getMoveValidator().getAllValidMoves(currentPlayer.getColor()).isEmpty() &&
-                !board.getMoveValidator().isCheck(currentPlayer.getColor());
+        return currentPlayer.getColor() == PieceColor.WHITE ? PieceColor.BLACK : PieceColor.WHITE;
     }
 
     private void switchPlayer() {
@@ -82,23 +93,10 @@ public class GameController {
 
     public Move getLastMove() { return lastMove; }
 
-    public List<Move> getValidMovesForPiece1(int row, int col) {
-        Piece piece = board.getPiece(row, col);
-        if (piece != null && piece.getColor() == currentPlayer.getColor()) {
-            List<Move> validPositions = board.getMoveValidator().getValidMoves(piece, row, col);
-            // Конвертируем Position в Move
-            return validPositions.stream()
-                    .map(pos -> new Move(row, col, pos.getToRow(), pos.getToCol(), piece))
-                    .collect(Collectors.toList());
-        }
-        return List.of();
-    }
-
     public List<Position> getValidMovesForPiece(int row, int col) {
-        Piece piece = board.getPiece(row, col);
+        Piece piece = board.getPiece(new Position(row, col));
 
         if (piece != null && piece.getColor() == currentPlayer.getColor()) {
-            // Возвращаем именно позиции
             return board.getMoveValidator().getValidMoves(piece, row, col).stream()
                     .map(move -> new Position(move.getToRow(), move.getToCol()))
                     .collect(Collectors.toList());

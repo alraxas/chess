@@ -10,14 +10,18 @@ public class Move {
     private Piece piece;
     private Piece capturedPiece;
     private boolean isCastling;
-    private boolean isEnPassant;
+    private boolean isEnPassant = false;
     private Piece promotionPiece;
 
-    public Move(int fromRow, int fromCol, int toRow, int toCol, Piece piece) {
+    public Move(int fromRow, int fromCol, int toRow, int toCol) {
         this.fromRow = fromRow;
         this.fromCol = fromCol;
         this.toRow = toRow;
         this.toCol = toCol;
+    }
+
+    public Move(int fromRow, int fromCol, int toRow, int toCol, Piece piece) {
+        this(fromRow, fromCol, toRow, toCol);
         this.piece = piece;
     }
 
@@ -39,6 +43,10 @@ public class Move {
 
     public Piece getPiece() {
         return piece;
+    }
+
+    public void setPiece(Piece piece) {
+        this.piece = piece;
     }
 
     public Piece getCapturedPiece() {

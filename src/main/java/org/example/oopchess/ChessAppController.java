@@ -10,15 +10,16 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
-import org.example.oopchess.controller.GameController;
+import org.example.oopchess.models.board.Move;
+import org.example.oopchess.models.pieces.Piece;
+import org.example.oopchess.rules.GameController;
 import org.example.oopchess.enums.PieceColor;
 import org.example.oopchess.models.board.Position;
-import org.example.oopchess.models.pieces.Piece;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ChessController {
+public class ChessAppController {
     @FXML
     private BorderPane rootPane;
     @FXML
@@ -30,6 +31,7 @@ public class ChessController {
     private GameController gameController;
     private Position selectedPosition;
     private List<Position> legalMoves;
+    //TODO: убрать пересоздание листа легал мувс и вынести в другое место не обновлять каждый раз
 
     @FXML
     public void initialize() {
@@ -37,6 +39,14 @@ public class ChessController {
         selectedPosition = null;
         legalMoves = new ArrayList<>();
         setupBoard();
+        updateDisplay();
+    }
+
+    @FXML
+    private void newGame() {
+        gameController = new GameController();
+        selectedPosition = null;
+        legalMoves.clear();
         updateDisplay();
     }
 
@@ -49,24 +59,26 @@ public class ChessController {
 
     private void onCellClick(int row, int col) {
         Position clicked = new Position(row, col);
-        Piece piece = gameController.getBoard().getPiece(row, col);
+        Piece piece = gameController.getBoard().getPiece(new Position(row, col));
 
-        if (selectedPosition == null) {
-            if (piece != null && piece.getColor() == gameController.getCurrentPlayer().getColor()) {
-                selectedPosition = clicked;
-                legalMoves = gameController.getValidMovesForPiece(row, col);
-            }
-        } else {
-            boolean isLegal = legalMoves.stream().anyMatch(p -> p.equals(clicked));
-            if (isLegal) {
-                gameController.makeMove(
-                        selectedPosition.getRow(), selectedPosition.getCol(),
-                        row, col
-                );
+        if (clicked.equals(selectedPosition)) { //отмена выбора повторное нажатие на выбранную фигуру
+            selectedPosition = null;
+            legalMoves.clear();
+        } else if (piece != null && piece.getColor() == gameController.getCurrentPlayer().getColor()) { //выбор фигуры
+            selectedPosition = clicked;
+            legalMoves = gameController.getValidMovesForPiece(row, col);
+        } else if (selectedPosition != null && legalMoves.stream().anyMatch(p -> p.equals(clicked))) { //ход
+            Move move =  gameController.makeMove(selectedPosition.getRow(), selectedPosition.getCol(), row, col);
+            if (move != null && move.isEnPassant()) {
+                System.out.println("En passant move performed!");
             }
             selectedPosition = null;
             legalMoves.clear();
+        } else {
+            selectedPosition = null;
+            legalMoves.clear();
         }
+
         updateDisplay();
     }
 
@@ -79,7 +91,6 @@ public class ChessController {
                 chessBoard.add(cell, col, row);
             }
         }
-
         updateStatus();
     }
 
@@ -91,8 +102,6 @@ public class ChessController {
         bg.setFill(((row + col) % 2 == 0) ? Color.TAN : Color.SADDLEBROWN);
         cell.getChildren().add(bg);
 
-
-        // Selected cell highlight
         if (selectedPosition != null && selectedPosition.equals(new Position(row, col))) {
             Rectangle sel = new Rectangle(70, 70);
             sel.setFill(Color.CORNFLOWERBLUE);
@@ -100,7 +109,6 @@ public class ChessController {
             cell.getChildren().add(sel);
         }
 
-        // Move targets
         for (Position p : legalMoves) {
             if (p.getRow() == row && p.getCol() == col) {
                 Circle dot = new Circle(10, Color.LIGHTGREEN);
@@ -109,8 +117,7 @@ public class ChessController {
             }
         }
 
-        // Piece
-        Piece piece = gameController.getBoard().getPiece(row, col);
+        Piece piece = gameController.getBoard().getPiece(new Position(row, col));
         if (piece != null) {
             Label lbl = new Label(pieceSymbol(piece));
             lbl.setStyle("-fx-font-size: 34; -fx-font-weight: bold;");
@@ -127,14 +134,7 @@ public class ChessController {
     }
 
     private String pieceSymbol(Piece piece) {
-        return switch (piece.getType()) {
-            case KING -> piece.getColor() == PieceColor.WHITE ? "♔" : "♚";
-            case QUEEN -> piece.getColor() == PieceColor.WHITE ? "♕" : "♛";
-            case ROOK -> piece.getColor() == PieceColor.WHITE ? "♖" : "♜";
-            case BISHOP -> piece.getColor() == PieceColor.WHITE ? "♗" : "♝";
-            case KNIGHT -> piece.getColor() == PieceColor.WHITE ? "♘" : "♞";
-            case PAWN -> piece.getColor() == PieceColor.WHITE ? "♙" : "♟";
-        };
+        return String.valueOf(piece.getSymbol());
     }
 
     private void updateStatus() {
@@ -142,13 +142,5 @@ public class ChessController {
                 ? "Ход: Белые" : "Ход: Черные";
         statusLabel.setText(current);
         gameStateLabel.setText("Статус: " + gameController.getGameState().toString());
-    }
-
-    @FXML
-    private void newGame() {
-        gameController = new GameController();
-        selectedPosition = null;
-        legalMoves.clear();
-        updateDisplay();
     }
 }

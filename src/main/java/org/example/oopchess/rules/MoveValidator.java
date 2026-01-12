@@ -3,6 +3,9 @@ package org.example.oopchess.rules;
 import org.example.oopchess.enums.PieceColor;
 import org.example.oopchess.models.board.Board;
 import org.example.oopchess.models.board.Move;
+import org.example.oopchess.models.board.Position;
+import org.example.oopchess.models.pieces.King;
+import org.example.oopchess.models.pieces.Pawn;
 import org.example.oopchess.models.pieces.Piece;
 
 import java.util.ArrayList;
@@ -24,145 +27,184 @@ public class MoveValidator {
         int tr = move.getToRow();
         int tc = move.getToCol();
 
-        if (!board.isValidPosition(tr, tc)) return false;
+        if (!board.isValidPosition(new Position(tr, tc))) return false;
         if (fr == tr && fc == tc) return false;
 
-        Piece target = board.getPiece(tr, tc);
+        Piece target = board.getPiece(new Position(tr, tc));
         if (target != null && target.getColor() == piece.getColor()) return false;
 
-        return isValidMoveForPiece(piece, fr, fc, tr, tc);
+        Position from = new Position(fr, fc);
+        Position to = new Position(tr, tc);
+        if (!piece.isValidMove(from, to, board)) return false;
+
+        return !wouldLeaveKingInCheck(move);
     }
 
-    private boolean isValidMoveForPiece(Piece piece, int fr, int fc, int tr, int tc) {
-        return switch (piece.getType()) {
-            case PAWN -> isValidPawnMove(piece, fr, fc, tr, tc);
-            case ROOK -> isValidRookMove(fr, fc, tr, tc);
-            case KNIGHT -> isValidKnightMove(fr, fc, tr, tc);
-            case BISHOP -> isValidBishopMove(fr, fc, tr, tc);
-            case QUEEN -> isValidQueenMove(fr, fc, tr, tc);
-            case KING -> isValidKingMove(piece, fr, fc, tr, tc);
-        };
+    private boolean wouldLeaveKingInCheck(Move move) {
+        Piece originalPiece = board.getPiece(new Position(move.getFromRow(), move.getFromCol()));
+        Piece targetPiece = board.getPiece(new Position(move.getToRow(), move.getToCol()));
+
+        board.setPiece(move.getToRow(), move.getToCol(), originalPiece);
+        board.setPiece(move.getFromRow(), move.getFromCol(), null);
+
+        boolean isInCheck = isCheck(move.getPiece().getColor());
+
+        board.setPiece(move.getFromRow(), move.getFromCol(), originalPiece);
+        board.setPiece(move.getToRow(), move.getToCol(), targetPiece);
+
+        return isInCheck;
     }
 
-    private boolean isValidPawnMove(Piece pawn, int fr, int fc, int tr, int tc) {
-        // Белые движутся вверх (row--), черные вниз (row++)
-        int direction = pawn.getColor() == PieceColor.WHITE ? -1 : 1;
-        int startRow = pawn.getColor() == PieceColor.WHITE ? 6 : 1;
+    //TODO: убрать разнести по классам
 
-        if (fc == tc) {
-            if (tr == fr + direction && board.getPiece(tr, tc) == null) return true;
-            if (fr == startRow && tr == fr + 2 * direction &&
-                    board.getPiece(tr, tc) == null &&
-                    board.getPiece(fr + direction, fc) == null)
-                return true;
-        }
-
-        // Взятие по диагонали
-        if (Math.abs(fc - tc) == 1 && tr == fr + direction) {
-            Piece target = board.getPiece(tr, tc);
-            if (target != null && target.getColor() != pawn.getColor()) return true;
-            // en passant добавить
-        }
-
-        return false;
-    }
-
-    private boolean isValidRookMove(int fr, int fc, int tr, int tc) {
-        if (fr != tr && fc != tc) return false;
-        return isPathClear(fr, fc, tr, tc);
-    }
-
-    private boolean isValidKnightMove(int fr, int fc, int tr, int tc) {
-        int dr = Math.abs(fr - tr), dc = Math.abs(fc - tc);
-        return (dr == 2 && dc == 1) || (dr == 1 && dc == 2);
-    }
-
-    private boolean isValidBishopMove(int fr, int fc, int tr, int tc) {
-        if (Math.abs(fr - tr) != Math.abs(fc - tc)) return false;
-        return isPathClear(fr, fc, tr, tc);
-    }
-
-    private boolean isValidQueenMove(int fr, int fc, int tr, int tc) {
-        return isValidRookMove(fr, fc, tr, tc) || isValidBishopMove(fr, fc, tr, tc);
-    }
-
-    private boolean isValidKingMove(Piece king, int fr, int fc, int tr, int tc) {
-        int dr = Math.abs(fr - tr), dc = Math.abs(fc - tc);
-        if (dr <= 1 && dc <= 1) return true;
-
-        if (!king.hasMoved() && fr == tr && Math.abs(fc - tc) == 2) {
-            // более строгую проверку (пустые клетки и отсутствие шахов) добавить отдельно
-            return true;
-        }
-
-        return false;
-    }
-
-    private boolean isValidKingMov1(Piece king, int fr, int fc, int tr, int tc) {
-        int dr = Math.abs(fr - tr), dc = Math.abs(fc - tc);
-        if (dr <= 1 && dc <= 1) return true;
-
-//        if (!king.hasMoved() && )
-        return false;
-    }
-
-    private boolean isSquareAttacked(int row, int col, PieceColor color) {
+    public boolean isSquareAttacked(int row, int col, PieceColor color) {
         PieceColor opponent = (color == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
 
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
-                Piece p = board.getPiece(r, c);
-                if (p != null && p.getColor() == opponent) {
+                Piece piece = board.getPiece(new Position(r, c));
+                if (piece != null && piece.getColor() == opponent) {
+                    Position from = new Position(r, c);
+                    Position to = new Position(row, col);
+                    if (piece.isValidMove(from, to, board)) {
+                        if (piece instanceof Pawn) {
+                            int rowDiff = row - r;
+                            int colDiff = Math.abs(col - c);
+                            int direction = (piece.getColor() == PieceColor.WHITE) ? -1 : 1;
 
-                    Move attack = new Move(r, c, row, col, p);
-                    if (isValidMoveForPiece(p, r, c, row, col)) {
+                            if (rowDiff == direction && colDiff == 1) {
+                                return true;
+                            }
+                        } else {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public List<Move> getValidMoves (Piece piece, int row, int col){
+        List<Move> moves = new ArrayList<>();
+
+        List<Move> possiblePositions = piece.getPossibleMoves(new Position(row, col), board);
+
+        for (Move move: possiblePositions) {
+            if (move.getPiece() == null) {
+                move.setPiece(piece);
+            }
+
+            if (isValidMove(move)) {
+                moves.add(move);
+            }
+        }
+
+        return moves;
+    }
+
+    public boolean isCheck(PieceColor color) {
+        Position kingPosition = findKingPosition(color);
+        if (kingPosition == null) return false;
+
+        PieceColor opponentColor = (color == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
+
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                Piece piece = board.getPiece(new Position(row, col));
+                if (piece != null && piece.getColor() == opponentColor) {
+                    if (canAttackSquare(piece, row, col, kingPosition.getRow(), kingPosition.getCol())) {
                         return true;
                     }
                 }
             }
         }
-
         return false;
     }
 
-    public List<Move> getValidMoves(Piece piece, int row, int col) {
-        List<Move> moves = new ArrayList<>();
-        for (int r = 0; r < 8; r++)
-            for (int c = 0; c < 8; c++) {
-                Move m = new Move(row, col, r, c, piece);
-                if (isValidMove(m)) moves.add(m);
-            }
-        return moves;
+    private boolean canAttackSquare(Piece attacker, int fromRow, int fromCol, int toRow, int toCol) {
+        Position from = new Position(fromRow, fromCol);
+        Position to = new Position(toRow, toCol);
+
+        if (attacker instanceof Pawn) {
+            int direction = (attacker.getColor() == PieceColor.WHITE) ? -1 : 1;
+            int rowDiff = toRow - fromRow;
+            int colDiff = Math.abs(toCol - fromCol);
+
+            return rowDiff == direction && colDiff == 1;
+        }
+
+        return attacker.isValidMove(from, to, board);
     }
 
-    private boolean isPathClear(int fr, int fc, int tr, int tc) {
-        int rs = Integer.compare(tr, fr);
-        int cs = Integer.compare(tc, fc);
-        int r = fr + rs, c = fc + cs;
-        while (r != tr || c != tc) {
-            if (board.getPiece(r, c) != null) return false;
-            r += rs;
-            c += cs;
+    private Position findKingPosition(PieceColor color) {
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                Piece piece = board.getPiece(new Position(row, col));
+                if (piece != null && piece instanceof King && piece.getColor() == color) {
+                    return new Position(row, col);
+                }
+            }
+        }
+        return null;
+    }
+
+    public boolean isCheckmate(PieceColor color) {
+        if (!isCheck(color)) return false;
+
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                Piece piece = board.getPiece(new Position(row, col));
+                if (piece != null && piece.getColor() == color) {
+                    List<Move> moves = getValidMoves(piece, row, col);
+                    if (!moves.isEmpty()) {
+                        return false;
+                    }
+                }
+            }
         }
         return true;
     }
 
-    // расширить позже
-    public boolean isCheck(PieceColor color) {
-        return false;
-    }
+    public boolean isStalemate(PieceColor color) {
+        if (isCheck(color)) return false;
 
-    public boolean isCheckmate(PieceColor color) {
-        return isCheck(color) && getAllValidMoves(color).isEmpty();
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                Piece piece = board.getPiece(new Position(row, col));
+                if (piece != null && piece.getColor() == color) {
+                    List<Move> moves = getValidMoves(piece, row, col);
+                    if (!moves.isEmpty()) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     public List<Move> getAllValidMoves(PieceColor color) {
         List<Move> moves = new ArrayList<>();
-        for (int r = 0; r < 8; r++)
-            for (int c = 0; c < 8; c++) {
-                Piece p = board.getPiece(r, c);
-                if (p != null && p.getColor() == color) moves.addAll(getValidMoves(p, r, c));
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                Piece piece = board.getPiece(new Position(row, col));
+                if (piece != null && piece.getColor() == color) {
+                    moves.addAll(getValidMoves(piece, row, col));
+                }
             }
+        }
         return moves;
+    }
+
+    public boolean isPathClear(int fr, int fc, int tr, int tc) {
+        int rs = Integer.compare(tr, fr);
+        int cs = Integer.compare(tc, fc);
+        int r = fr + rs, c = fc + cs;
+        while (r != tr || c != tc) {
+            if (board.getPiece(new Position(r, c)) != null) return false;
+            r += rs;
+            c += cs;
+        }
+        return true;
     }
 }

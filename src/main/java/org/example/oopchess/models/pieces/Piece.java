@@ -1,36 +1,27 @@
 package org.example.oopchess.models.pieces;
 
 import org.example.oopchess.enums.PieceColor;
-import org.example.oopchess.enums.PieceType;
+import org.example.oopchess.models.board.Board;
+import org.example.oopchess.models.board.Move;
+import org.example.oopchess.models.board.Position;
 
-public class Piece {
-    private PieceType type;
-    private PieceColor color;
-    private boolean hasMoved;
+import java.util.List;
+//TODO: создать отдельные классы для фигур с логикой ходов
+public abstract class Piece {
+    protected PieceColor color;
+    protected boolean hasMoved;
 
-    public Piece(PieceType type, PieceColor color, boolean hasMoved) {
-        this.type = type;
+    public Piece(PieceColor color) {
         this.color = color;
-        this.hasMoved = hasMoved;
+        this.hasMoved = false;
     }
 
-    public Piece(PieceType type, PieceColor color) {
-        this(type, color, false);
-    }
+    public PieceColor getColor() { return color; }
+    public boolean hasMoved() { return hasMoved; }
+    public void setMoved(boolean hasMoved) { this.hasMoved = hasMoved; }
 
-    public void setMoved(boolean hasMoved) {
-        this.hasMoved = hasMoved;
-    }
-
-    public PieceType getType() {
-        return type;
-    }
-
-    public PieceColor getColor() {
-        return color;
-    }
-
-    public boolean hasMoved() {
-        return hasMoved;
-    }
+    public abstract List<Move> getPossibleMoves(Position current, Board board);
+    public abstract boolean isValidMove(Position from, Position to, Board board);
+    public abstract char getSymbol();
+    public abstract String getPieceName();
 }
